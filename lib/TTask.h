@@ -1,18 +1,14 @@
 #include<memory>
 #include<utility>
-#include "TFuture.h"
-#include<cstddef>
-#include<string>
 #include<type_traits>
-#include<optional>
 #include <stdexcept>
-#include <typeinfo>
-#include <any>
+#include "utility/TAny.h"
+#include "TFuture.h"
 
 struct NodeBase {
     virtual ~NodeBase() = default;
     virtual void Execute() = 0;
-    virtual std::any& GetRawResult() = 0;
+    virtual Any& GetRawResult() = 0;
     virtual bool WasMoved() const = 0;
     virtual void MarkAsMoved() = 0;
 };

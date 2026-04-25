@@ -19,7 +19,7 @@ public:
     }
 
     template<typename T>
-    T Move_cast() {
+    T MoveCast() {
         auto* derived = dynamic_cast<Holder<std::decay_t<T>>*>(ptr.get());
         if (!derived) throw std::runtime_error("Any: Wrong type cast!");
         return std::move(derived->value);
