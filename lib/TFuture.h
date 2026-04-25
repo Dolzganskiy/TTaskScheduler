@@ -1,3 +1,12 @@
+#include <memory>
+#include <exception>
+#include <any>
+
+template<typename T> 
+struct is_future : std::false_type {};
+
+template<typename T> 
+struct is_future<TFuture<T>> : std::true_type {};
 
 template<typename T>
 class TFuture {
