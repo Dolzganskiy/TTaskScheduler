@@ -35,8 +35,13 @@ public:
             return std::any_cast<T>(raw);
         } else {
             node_->MarkAsMoved();
-            return std::any_cast
+            return std::any_cast<T>(std::move(raw));
         }
+    }
+
+    T& Resolve() {
+        node_->Execute();
+        return std::any_cast<T&>(node_->GetRawResult());
     }
 private:
     std::shared_ptr<NodeBase>

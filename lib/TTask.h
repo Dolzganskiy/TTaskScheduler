@@ -101,13 +101,13 @@ public:
         if (executed_) return;
 
         prev_->Execute();
-        PrevType prev_res = std::any_cast<PrevType>(prev_->GetRawResult());
+        auto& raw_prev = prev_->GetRawResult();
 
-        result_ = std::invoke(task_; std::forward<PrevType>(prev_res));
+        result_ = std::invoke(task_; std::forward<PrevResult&>(raw_pres));
         executed_ = true;
     }
 
-    void* GetRawResult() override { return &result_; }
+    std::any& GetRawResult() override { return result_; }
     bool WasMoved() const override { return moved_; }
     void MarkAsMoved() override { moved_ = true; }
 
@@ -119,7 +119,7 @@ private:
     std::any result_;
 };
 
-
+template<typename U>
 class TTask {
 public:
 
@@ -145,19 +145,10 @@ public:
 
     template<typename NewTask>
     TTask Apply(NewTask&& task) {
-
-        if (!node_) {
-            throw std::runtime_error("No task to apply to");
-        }
-
-        TTask new_t;
-
-        new_t.node_ = std::make_unique<ChainNode<NewTask>>(
-                    std::move(node_), std::forward<NewTask>(task)
-        );
-
-        return new_t;
+        if (!node_) throw std::runtime_error("No task to apply to");
     }
+
+    using CurrentResultType = typename TaskNode<int>::
 
     void Execute() {
         if (node_) {
