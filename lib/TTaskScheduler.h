@@ -3,20 +3,22 @@
 #include "TTask.h"
 #include <vector>
 
-
-
 class TTaskScheduler {
 public:
     template<typename Task, typename... Args>
-    auto Add(Task task, Args... args) {
-        TTask new_task(task, args);
-        tasks_.push_back(new_task);
-        return new_task;
+    auto Add(Task&& task, Args&&... args) {
+        using ResultType = std::invoke_result_t<Task, Args...>;
+        auto node = std::make_shared<TaskNode<Task, Args...>>(std::forward<Task>(task), std::forward<Args>(args)...);
+        tasks_.push_back(node);
+        return TTask<ResultType>(node);
     }
 
     void ExecuteAll() {
-
+        for (auto& node : tasks_) {
+            node->Execute();
+        }
     }
+
 private:
-    std::vector<TTask> tasks_;
+    std::vector<std::shared_ptr<NodeBase>> tasks_;
 };
