@@ -84,7 +84,7 @@ private:
 
     template<std::size_t... Ind>
     result_type ExecuteImpl(std::index_sequence<Ind...>) {
-        return task_(NodeGet<Ind, Node<Args...>>::Get(args_)...);
+        return std::invoke(task_, ResolveArg(NodeGet<Ind, Node<Args...>>::Get(args_))...);
     }
 };
 
@@ -123,41 +123,24 @@ private:
 class TTask {
 public:
 
-    TTask() = default;
-
-    template<typename Task, typename... Args>
-    TTask(Task&& task, Args&&... args) {
-        node_ = std::make_unique<TaskNode<Task, Args...>>(std::forward<Task>(task), std::forward<Args>(args)...);
-
-    }
+    TTask(std::shared_ptr<NodeBase> node) : node_(node) {}
 
     template<typename T>
     T GetResultSync() {
-
-        static_assert(!std::is_void_v<T>, "Cannot get result of void task");
-
-        if (!node_) {
-            throw std::runtime_error("No Task Stored");
-        }
-
         node_->Execute();
+        if (node_->WasMoved()) throw std::runtime_error("Result already moved");
 
-        std::any* raw = static_cast<std::any*>(node_->GetRawResult());
-
-        if (!raw) {
-            throw std::runtime_error("Task returned void");
+        if constexpr (std::is_reference_v<T>) {
+            return std::any_cast<T>(node_->GetRawResult());
+        } else {
+            node_->MarkAsMoved();
+            return std::any_cast<T>(std::move(node_->GetRawResult()));
         }
-
-        if (raw->type() != typeid(T)) {
-            throw std::runtime_error("Wrong result type");
-        }
-    
-        return std::any_cast<T>(*raw);
     }
 
     template<typename T>
     TFuture<T> GetFutureResult() {
-        return TFuture<T>{};
+        return TFuture<T>(node_);
     }
 
     template<typename NewTask>
