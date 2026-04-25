@@ -3,6 +3,7 @@
 #include<type_traits>
 #include <stdexcept>
 #include "utility/TAny.h"
+#include "utility/TInvoke.h"
 #include "TFuture.h"
 
 struct NodeBase {
@@ -52,7 +53,6 @@ struct NodeGet<0, Node<T, Args...>> {
 
 template<typename Task, typename... Args> 
 struct TaskNode : NodeBase {
-    using result_type = std::invoke_result_t<Task, Args...>;
 
     TaskNode(Task&& task, Args&&... args) 
         : task_(std::forward<Task>(task)), 
@@ -76,19 +76,17 @@ private:
 
     bool executed_ = false;
     bool moved_ = false;
-    std::any result_;
+    Any result_;
 
     template<std::size_t... Ind>
-    result_type ExecuteImpl(std::index_sequence<Ind...>) {
-        return std::invoke(task_, ResolveArg(NodeGet<Ind, Node<Args...>>::Get(args_))...);
+    auto ExecuteImpl(std::index_sequence<Ind...>) {
+        return Invoke(task_, ResolveArg(NodeGet<Ind, Node<Args...>>::Get(args_))...);
     }
 };
 
 template<typename PrevType, typename NewTask>
 struct ChainNode : NodeBase {
 public:
-    using result_type = std::invoke_result_t<NewTask, PrevType>;
-
     ChainNode(std::shared_ptr<NodeBase> prev, NewTask&& task) 
         : prev_(prev), task_(std::forward<NewTask>(task))
     {}
@@ -97,13 +95,12 @@ public:
         if (executed_) return;
 
         prev_->Execute();
-        auto& raw_prev = prev_->GetRawResult();
 
-        result_ = std::invoke(task_; std::forward<PrevResult&>(raw_pres));
+        result_ = Invoke(task_, prev_->GetRawResult().template Cast<std::decay_t<PrevType>>());
         executed_ = true;
     }
 
-    std::any& GetRawResult() override { return result_; }
+    Any& GetRawResult() override { return result_; }
     bool WasMoved() const override { return moved_; }
     void MarkAsMoved() override { moved_ = true; }
 
@@ -112,7 +109,7 @@ private:
     NewTask task_;
     bool executed_ = false;
     bool moved_ = false;
-    std::any result_;
+    Any result_;
 };
 
 template<typename U>
@@ -122,20 +119,19 @@ public:
     TTask(std::shared_ptr<NodeBase> node) : node_(node) {}
 
     R GetResultSync() {
-        node_->Execute();
         return TFuture<R>(node_).Get();
     }
 
-    template<typename T>
+    template<typename T = U>
     TFuture<T> GetFutureResult() {
         return TFuture<T>(node_);
     }
 
     template<typename NewTask>
     auto Apply(NewTask&& task) {
-        using NextResult = std::invoke_result_t<NewTask, R&>;
+        using NextResult = std::invoke_result_t<NewTask, U&>;
         
-        auto new_node = std::make_shared<ChainNode<R, NewTask>>(
+        auto new_node = std::make_shared<ChainNode<U, NewTask>>(
             node_, std::forward<NewTask(task)
         );
         return TTask<NextResult>(new_node);
