@@ -125,17 +125,9 @@ public:
 
     TTask(std::shared_ptr<NodeBase> node) : node_(node) {}
 
-    template<typename T>
-    T GetResultSync() {
+    R GetResultSync() {
         node_->Execute();
-        if (node_->WasMoved()) throw std::runtime_error("Result already moved");
-
-        if constexpr (std::is_reference_v<T>) {
-            return std::any_cast<T>(node_->GetRawResult());
-        } else {
-            node_->MarkAsMoved();
-            return std::any_cast<T>(std::move(node_->GetRawResult()));
-        }
+        return TFuture<R>(node_).Get();
     }
 
     template<typename T>
@@ -144,19 +136,16 @@ public:
     }
 
     template<typename NewTask>
-    TTask Apply(NewTask&& task) {
-        if (!node_) throw std::runtime_error("No task to apply to");
-    }
-
-    using CurrentResultType = typename TaskNode<int>::
-
-    void Execute() {
-        if (node_) {
-            node_->Execute();
-        }
+    auto Apply(NewTask&& task) {
+        using NextResult = std::invoke_result_t<NewTask, R&>;
+        
+        auto new_node = std::make_shared<ChainNode<R, NewTask>>(
+            node_, std::forward<NewTask(task)
+        );
+        return TTask<NextResult>(new_node);
+        
     }
 
 private:
-    std::unique_ptr<NodeBase> node_;
-
+    std::shared_ptr<NodeBase> node_;
 };
