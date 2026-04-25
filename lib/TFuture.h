@@ -8,6 +8,15 @@ struct is_future : std::false_type {};
 template<typename T> 
 struct is_future<TFuture<T>> : std::true_type {};
 
+template<typename Arg>
+decltype(auto) ResolveArg(Arg& arg) {
+    if constexpr (is_future<std::decay_t<Arg>>::value) {
+        return arg.resolve();
+    } else {
+        return arg;
+    }
+}
+
 template<typename T>
 class TFuture {
 public:
