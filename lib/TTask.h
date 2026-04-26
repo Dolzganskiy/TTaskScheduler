@@ -1,3 +1,5 @@
+#pragma once
+
 #include<memory>
 #include<utility>
 #include<type_traits>
@@ -5,14 +7,7 @@
 #include "utility/TAny.h"
 #include "utility/TInvoke.h"
 #include "TFuture.h"
-
-struct NodeBase {
-    virtual ~NodeBase() = default;
-    virtual void Execute() = 0;
-    virtual Any& GetRawResult() = 0;
-    virtual bool WasMoved() const = 0;
-    virtual void MarkAsMoved() = 0;
-};
+#include "utility/NodeBase.h"
 
 template<typename... Args>
 struct Node;
@@ -66,7 +61,7 @@ struct TaskNode : NodeBase {
         executed_ = true;
     }
 
-    std::any& GetRawResult() override { return result_; } 
+    Any& GetRawResult() override { return result_; } 
     bool WasMoved() const override { return moved_; }
     void MarkAsMoved() override { moved_ = true; }
 
@@ -115,11 +110,10 @@ private:
 template<typename U>
 class TTask {
 public:
-
     TTask(std::shared_ptr<NodeBase> node) : node_(node) {}
 
-    R GetResultSync() {
-        return TFuture<R>(node_).Get();
+    U GetResultSync() {
+        return TFuture<U>(node_).Get();
     }
 
     template<typename T = U>
@@ -132,7 +126,7 @@ public:
         using NextResult = std::invoke_result_t<NewTask, U&>;
         
         auto new_node = std::make_shared<ChainNode<U, NewTask>>(
-            node_, std::forward<NewTask(task)
+            node_, std::forward<NewTask>(task)
         );
         return TTask<NextResult>(new_node);
         

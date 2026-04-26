@@ -1,3 +1,5 @@
+#pragma once
+
 #include <memory>
 #include <type_traits>
 #include <utility>
@@ -13,16 +15,16 @@ public:
 
     template<typename T>
     T& Cast() {
-        auto* derived = dynamic_cast<Holder<std::decay_t<T>>*>(ptr.get());
+        auto* derived = dynamic_cast<Holder<std::decay_t<T>>*>(ptr_.get());
         if (!derived) throw std::runtime_error("Any: Wrong type cast!");
-        return derived->value;
+        return derived->value_;
     }
 
     template<typename T>
     T MoveCast() {
-        auto* derived = dynamic_cast<Holder<std::decay_t<T>>*>(ptr.get());
+        auto* derived = dynamic_cast<Holder<std::decay_t<T>>*>(ptr_.get());
         if (!derived) throw std::runtime_error("Any: Wrong type cast!");
-        return std::move(derived->value);
+        return std::move(derived->value_);
     }
 private:
     struct Base {
