@@ -13,7 +13,8 @@ decltype(auto) Invoke(F&& f, Args&&... args) {
                 return (obj.*method)(std::forward<decltype(params)>(params)...);
             }
         };
-        return helper(std::forward<Args>(args)..., std::forward<F>(f));
+
+        return helper(std::forward<F>(f), std::forward<Args>(args)...);
     } else {
         return std::forward<F>(f)(std::forward<Args>(args)...);
     }
