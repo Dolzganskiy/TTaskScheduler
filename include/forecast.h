@@ -10,6 +10,8 @@ struct MeteoInfo {
     int temprature;
     int weather_code;
     std::string precipitation;
+
+    bool operator==(const MeteoInfo& other) const = default;
 };
 
 class IMeteoBase {

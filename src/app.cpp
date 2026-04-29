@@ -21,4 +21,5 @@ void App::Execute(const MeteoInfo& info, std::vector<std::vector<std::string>> p
         std::cout << "\tРасстояние: " << place[1] << std::endl;
         std::cout << "\tАдрес: " << place[2] << std::endl;
     }
+    std::cout << "\n-------------------------------------------\n" << std::endl;
 }
