@@ -57,7 +57,13 @@ struct TaskNode : NodeBase {
     void Execute() override {
         if (executed_) return;
 
-        result_ = ExecuteImpl(std::make_index_sequence<sizeof...(Args)>{});
+        using ReturnType = std::invoke_result_t<Task, unwrap_future_t<Args>...>;
+
+        if constexpr (std::is_void_v<ReturnType>) {
+            ExecuteImpl(std::make_index_sequence<sizeof...(Args)>{});
+        } else {
+            result_ = ExecuteImpl(std::make_index_sequence<sizeof...(Args)>{});
+        }
         executed_ = true;
     }
 
