@@ -29,7 +29,6 @@ public:
     }
 
     auto& Resolve() {
-        node_->Execute();
         return node_->GetRawResult().template Cast<T>();
     }
 private:

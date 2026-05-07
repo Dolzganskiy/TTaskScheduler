@@ -132,8 +132,7 @@ public:
         using NextResult = std::invoke_result_t<NewTask, U&>;
         
         auto new_node = std::make_shared<ChainNode<U, NewTask>>(
-            node_, std::forward<NewTask>(task)
-        );
+            node_, std::forward<NewTask>(task));
         return TTask<NextResult>(new_node);
         
     }
